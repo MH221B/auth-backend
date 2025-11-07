@@ -21,28 +21,27 @@ Lightweight Spring Boot authentication backend used for demos and exercises. It 
 
    PowerShell:
 
-       Copy-Item .env.example .env
+     Copy-Item .env.example .env
 
-2. Start the application and Postgres using the development compose (includes optional dev services):
+2. Start the application and Postgres.
 
-   PowerShell (recommended when using the dev override):
+   - Development (recommended when actively editing code). The `app-dev` service in the single `docker-compose.yml` file mounts your project so code changes are visible and uses the Gradle wrapper inside the container to run the app.
 
-       docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
-
-   Or without the dev override (production-like):
+     PowerShell:
 
        docker-compose up --build -d
 
-3. View logs (app):
+3. View logs (development):
 
-       docker-compose logs -f app
+  docker-compose logs -f auth-backend-app-dev
 
 4. Stop and remove containers:
 
-       docker-compose down
+     docker-compose down
 
-Notes:
-- When running with Docker Compose, prefer setting SPRING_DATASOURCE_URL to use the `postgres` service host: `jdbc:postgresql://postgres:5432/auth`.
+- Notes:
+- The compose stack now lives in a single `docker-compose.yml`. Development conveniences are available via the `app-dev` service.
+- When running with Docker Compose, prefer setting `SPRING_DATASOURCE_URL` to use the `postgres` service host: `jdbc:postgresql://postgres:5432/auth`.
 - If host port 5432 is already taken, change the host mapping for the Postgres service in `docker-compose.yml` (e.g., `5433:5432`).
 
 ## Running locally with Gradle
@@ -101,7 +100,7 @@ For production deployments (Render, Neon, etc.):
 
 - `src/main/java/.../controller/AuthController.java` — registration endpoint
 - `.env.example` — example environment variables
-- `docker-compose.yml` & `docker-compose.dev.yml` — compose stacks for prod-like and dev scenarios
+- `docker-compose.yml` — Compose stack; use it to start the `app-dev` service which mounts the project for live editing
 
 ## Troubleshooting
 
