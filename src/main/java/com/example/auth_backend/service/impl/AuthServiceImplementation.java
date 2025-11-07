@@ -12,6 +12,9 @@ import com.example.auth_backend.service.AuthService;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @AllArgsConstructor
@@ -20,13 +23,34 @@ public class AuthServiceImplementation implements AuthService {
 
     @Override
     public UserDTO registerUser(UserCreateDTO userCreateDTO) {
-        if (userCreateDTO == null) return null;
+        if (userCreateDTO == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+
         String email = userCreateDTO.getEmail();
-        if (email != null && userRepository.existsByEmail(email)) {
+        String password = userCreateDTO.getPassword();
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+
+        // Simple email format check
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email format");
+        }
+
+        if (password == null || password.length() < 6) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at least 6 characters");
+        }
+
+        if (userRepository.existsByEmail(email)) {
             throw new ResourceAlreadyExistsException("Email already in use: " + email);
         }
 
         User user = UserMapper.mapToUser(userCreateDTO);
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        user.setPassword(encoder.encode(password));
+
         User saved = userRepository.save(user);
         return UserMapper.mapToUserDTO(saved);
     }
