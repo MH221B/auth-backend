@@ -1,6 +1,7 @@
 # Auth Backend
 
-Lightweight Spring Boot authentication backend used for demos and exercises. It provides a minimal user registration flow and is configured to run locally via Gradle or Docker Compose.
+Lightweight Spring Boot authentication backend used for demos and exercises. It provides a minimal user registration flow and is intended to be run on the host (locally) via the bundled Gradle wrapper or by running the built jar.
+This repository includes a Docker Compose file that starts a Postgres database for local development, but the Spring Boot application itself no longer runs inside a container.
 
 ## What's in this repo
 
@@ -11,11 +12,13 @@ Lightweight Spring Boot authentication backend used for demos and exercises. It 
 
 ## Prerequisites
 
-- Java (JDK 11+ recommended) if running locally
-- Docker & Docker Compose (recommended for local development)
-- PowerShell (Windows) or another shell
+- Java (JDK 11+ recommended) to run the application locally
+- PowerShell (Windows) or another shell for running the commands below
+- Docker & Docker Compose (optional) only if you want to run the bundled Postgres database in a container
 
-## Quick start — Docker Compose (recommended)
+## Quick start — Run locally (recommended)
+
+This project is intended to be run on your host machine (IDE or the Gradle wrapper). The included `docker-compose.yml` only starts a Postgres database for local development — it does not start the Spring Boot app.
 
 1. Copy the example env file to `.env` and edit values. Do NOT commit your real `.env`:
 
@@ -23,44 +26,42 @@ Lightweight Spring Boot authentication backend used for demos and exercises. It 
 
      Copy-Item .env.example .env
 
-2. Start the application and Postgres.
+2. (Optional) Start Postgres with Docker Compose if you want a local DB container:
 
-   - Development (recommended when actively editing code). The `app-dev` service in the single `docker-compose.yml` file mounts your project so code changes are visible and uses the Gradle wrapper inside the container to run the app.
+   PowerShell:
 
-     PowerShell:
+     docker-compose up -d
 
-       docker-compose up --build -d
+   View Postgres logs:
 
-3. View logs (development):
+     docker-compose logs -f auth-backend-postgres
 
-  docker-compose logs -f auth-backend-app-dev
-
-4. Stop and remove containers:
+   Stop and remove containers:
 
      docker-compose down
 
-- Notes:
-- The compose stack now lives in a single `docker-compose.yml`. Development conveniences are available via the `app-dev` service.
-- When running with Docker Compose, prefer setting `SPRING_DATASOURCE_URL` to use the `postgres` service host: `jdbc:postgresql://postgres:5432/auth`.
-- If host port 5432 is already taken, change the host mapping for the Postgres service in `docker-compose.yml` (e.g., `5433:5432`).
+3. Run the Spring Boot application on your host using the Gradle wrapper (PowerShell):
 
-## Running locally with Gradle
+   Run in-place (development):
 
-Run the application using the bundled Gradle wrapper (PowerShell):
+     .\gradlew.bat bootRun
 
-  .\gradlew.bat bootRun
+   Or build and run the jar:
 
-Or build a jar and run it:
+     .\gradlew.bat build; java -jar build\libs\auth-backend-0.0.1-SNAPSHOT.jar
 
-  .\gradlew.bat build; java -jar build\libs\auth-backend-0.0.1-SNAPSHOT.jar
+Notes:
+
+- The Compose file is provided only to run a Postgres database for local development. The application is expected to run on the host and connect to that database via `localhost` (or the host port mapped in `docker-compose.yml`).
+- When connecting to a DB started by Compose from your host, set `SPRING_DATASOURCE_URL` to something like `jdbc:postgresql://localhost:5433/auth` (adjust the host port if you changed the mapping).
 
 ## Configuration & environment
 
-Environment variables (or `.env` when using Compose) control DB connection and profiles. See `.env.example` for defaults.
-
+Environment variables (or the `.env` file when using Compose for Postgres) control DB connection and profiles. See `.env.example` for defaults.
+  
 Important variables:
 
-- SPRING_DATASOURCE_URL — JDBC URL for Postgres (e.g. `jdbc:postgresql://postgres:5432/auth` when using compose)
+- SPRING_DATASOURCE_URL — JDBC URL for Postgres (e.g. `jdbc:postgresql://localhost:5433/auth` when running the app on your host)
 - SPRING_DATASOURCE_USERNAME — DB username
 - SPRING_DATASOURCE_PASSWORD — DB password
 - SPRING_PROFILES_ACTIVE — (optional) set to `prod` for production config
@@ -100,11 +101,14 @@ For production deployments (Render, Neon, etc.):
 
 - `src/main/java/.../controller/AuthController.java` — registration endpoint
 - `.env.example` — example environment variables
-- `docker-compose.yml` — Compose stack; use it to start the `app-dev` service which mounts the project for live editing
+- `docker-compose.yml` — Compose stack; use it to start a Postgres container only (database), not the application
 
 ## Troubleshooting
 
 - If containers fail to start, inspect logs with `docker-compose logs` and check that `SPRING_DATASOURCE_URL` points to the correct host (inside compose use `postgres`).
+- If the app cannot bind to port 8080, ensure no other service is using that port or change the mapping in the compose file.
+- If the application cannot connect to Postgres, verify that the container is running (`docker-compose ps`) and that `SPRING_DATASOURCE_URL` points to `localhost` with the correct host port (default `jdbc:postgresql://localhost:5433/auth`).
+- If you run the app inside Docker Compose, use `postgres` as the DB host in the JDBC URL (e.g. `jdbc:postgresql://postgres:5432/auth`).
 - If the app cannot bind to port 8080, ensure no other service is using that port or change the mapping in the compose file.
 
 ---
