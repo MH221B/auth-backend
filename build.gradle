@@ -28,7 +28,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+	implementation 'org.postgresql:postgresql:42.7.3'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -38,4 +39,9 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Ensure the JVM uses the specified timezone when running via Gradle bootRun
+bootRun {
+    jvmArgs = ['-Duser.timezone=Asia/Ho_Chi_Minh']
 }
