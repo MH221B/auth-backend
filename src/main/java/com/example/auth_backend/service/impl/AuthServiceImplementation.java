@@ -15,7 +15,7 @@ import com.example.auth_backend.service.RefreshTokenService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -24,6 +24,7 @@ public class AuthServiceImplementation implements AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDTO registerUser(UserCreateDTO userCreateDTO) {
@@ -52,8 +53,7 @@ public class AuthServiceImplementation implements AuthService {
         }
 
         User user = UserMapper.mapToUser(userCreateDTO);
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        user.setPassword(encoder.encode(password));
+        user.setPassword(passwordEncoder.encode(password));
 
         User saved = userRepository.save(user);
         return UserMapper.mapToUserDTO(saved);
@@ -77,8 +77,7 @@ public class AuthServiceImplementation implements AuthService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        if (!encoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
