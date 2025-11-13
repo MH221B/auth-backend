@@ -9,6 +9,8 @@ import com.example.auth_backend.mapper.UserMapper;
 import com.example.auth_backend.entity.User;
 import com.example.auth_backend.repository.UserRepository;
 import com.example.auth_backend.service.AuthService;
+import com.example.auth_backend.service.JwtService;
+import com.example.auth_backend.service.RefreshTokenService;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 @AllArgsConstructor
 public class AuthServiceImplementation implements AuthService {
     private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public UserDTO registerUser(UserCreateDTO userCreateDTO) {
@@ -57,6 +61,37 @@ public class AuthServiceImplementation implements AuthService {
 
     @Override
     public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO) {
-        return null;
+        if (loginRequestDTO == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+
+        String email = loginRequestDTO.getEmail();
+        String password = loginRequestDTO.getPassword();
+
+        if (email == null || email.trim().isEmpty() || password == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email and password are required");
+        }
+
+        User user = userRepository.findAll().stream()
+                .filter(u -> email.equals(u.getEmail()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        if (!encoder.matches(password, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+
+    // generate access token
+        String accessToken = jwtService.generateAccessToken(user);
+    // create refresh token raw value (stored hashed in DB by service)
+    String refreshRaw = refreshTokenService.createToken(user);
+
+    LoginResponseDTO resp = new LoginResponseDTO();
+        resp.setToken(accessToken);
+        resp.setUser(UserMapper.mapToUserDTO(user));
+    resp.setRefreshTokenRaw(refreshRaw);
+        // NOTE: refresh token raw is intentionally not returned in body — it will be set as httpOnly cookie by controller
+        return resp;
     }
 }
