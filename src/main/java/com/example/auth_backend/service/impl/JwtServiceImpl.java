@@ -55,7 +55,8 @@ public class JwtServiceImpl implements JwtService {
             Instant now = Instant.now();
             Instant exp = now.plusSeconds(expirationSeconds);
 
-            List<String> roles = Collections.singletonList("USER");
+            String role = user.getRole() != null ? user.getRole().name() : "USER";
+            List<String> roles = Collections.singletonList(role);
 
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(user.getUserId() != null ? user.getUserId().toString() : null)

@@ -14,6 +14,9 @@ import com.example.auth_backend.service.RefreshTokenService;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
@@ -52,7 +55,19 @@ public class AuthServiceImplementation implements AuthService {
             throw new ResourceAlreadyExistsException("Email already in use: " + email);
         }
 
-        User user = UserMapper.mapToUser(userCreateDTO);
+        // determine if caller is authenticated and has ADMIN role; only then allow role assignment
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean allowRole = false;
+        if (auth != null && auth.isAuthenticated()) {
+            for (GrantedAuthority ga : auth.getAuthorities()) {
+                if ("ROLE_ADMIN".equals(ga.getAuthority())) {
+                    allowRole = true;
+                    break;
+                }
+            }
+        }
+
+        User user = UserMapper.mapToUser(userCreateDTO, allowRole);
         user.setPassword(passwordEncoder.encode(password));
 
         User saved = userRepository.save(user);
