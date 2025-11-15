@@ -41,12 +41,16 @@ public class AuthController {
     private void setRefreshCookie(HttpServletResponse response, String token) {
         long maxAge = (token == null || token.trim().isEmpty()) ? 0 : REFRESH_COOKIE_MAX_AGE;
         String value = token == null ? "" : token;
-        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, value)
+            // If cookies are marked Secure (production over HTTPS), browsers require
+            // SameSite=None for cross-site cookies. For non-secure cookies use Lax.
+            String sameSite = secureCookie ? "None" : "Lax";
+
+            ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, value)
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
                 .maxAge(maxAge)
-                .sameSite("None")
+                .sameSite(sameSite)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
